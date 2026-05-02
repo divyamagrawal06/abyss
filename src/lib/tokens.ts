@@ -11,41 +11,30 @@ export interface KnownSpender {
   kind: string
 }
 
-// Mantle mainnet token addresses
+// Mantle mainnet token addresses.
+// IMPORTANT: verify each address against https://explorer.mantle.xyz before production.
+// Addresses sourced from training data; confirm via Mantle docs / explorer.
 export const MAINNET_TOKENS: TokenInfo[] = [
   {
+    // Confirm: https://explorer.mantle.xyz/token/0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8
     address: '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8',
     symbol: 'WMNT',
     name: 'Wrapped MNT',
     decimals: 18,
   },
   {
-    address: '0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    decimals: 6,
-  },
-  {
-    address: '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE',
-    symbol: 'USDT',
-    name: 'Tether USD',
-    decimals: 6,
-  },
-  {
+    // Canonical BVM ETH predeploy — intentional "dead" pattern, not a burn address
+    // Confirm: https://explorer.mantle.xyz/token/0xdEAddEaDdeadDEadDEADDEaddEADdEAddead1111
     address: '0xdEAddEaDdeadDEadDEADDEaddEADdEAddead1111',
     symbol: 'WETH',
-    name: 'Wrapped Ether',
-    decimals: 18,
-  },
-  {
-    address: '0xcDA86A272531e8640cD7F1a92c01839911B90bb0',
-    symbol: 'mETH',
-    name: 'Mantle Staked ETH',
+    name: 'Wrapped Ether (Bridged)',
     decimals: 18,
   },
 ]
 
-// Mantle Sepolia testnet token addresses — update when testnet equivalents are confirmed
+// Mantle Sepolia testnet token addresses.
+// Approval Check is disabled on testnet until these are populated.
+// Populate from: https://explorer.sepolia.mantle.xyz
 export const TESTNET_TOKENS: TokenInfo[] = []
 
 export const TOKENS =
