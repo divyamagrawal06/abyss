@@ -32,5 +32,8 @@ next-env.d.ts
 *.pem
 Thumbs.db
 
+# playwright browser automation artifacts
+.playwright-mcp/
+
 # docs (internal only, not for repo)
 docs/
