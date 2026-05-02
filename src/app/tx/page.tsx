@@ -2,6 +2,21 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useWriteContract, useAccount } from 'wagmi'
+
+const ATTEST_ABI = [
+  {
+    name: 'attest',
+    type: 'function',
+    inputs: [
+      { name: 'contentId', type: 'bytes32' },
+      { name: 'contentHash', type: 'bytes32' },
+      { name: 'meta', type: 'string' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const
 
 interface TxEvidence {
   schema_version: string
@@ -26,6 +41,11 @@ interface TxResult {
   evidence: TxEvidence
   interpretation: string
   explorerUrl: string
+  attestData?: {
+    contentId: `0x${string}`
+    contentHash: `0x${string}`
+    meta: string
+  }
 }
 
 function formatWei(hexWei: string): string {
@@ -85,6 +105,22 @@ export default function TxPage() {
   const [result, setResult] = useState<TxResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+
+  const { isConnected } = useAccount()
+  const { writeContract, isPending: attestPending, data: attestTxHash, isSuccess: attestSuccess } =
+    useWriteContract()
+
+  const contractAddress = process.env.NEXT_PUBLIC_ATTEST_CONTRACT as `0x${string}` | undefined
+
+  const handleAttest = () => {
+    if (!result?.attestData || !contractAddress) return
+    writeContract({
+      address: contractAddress,
+      abi: ATTEST_ABI,
+      functionName: 'attest',
+      args: [result.attestData.contentId, result.attestData.contentHash, result.attestData.meta],
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -363,7 +399,41 @@ export default function TxPage() {
             >
               {copied ? '✓ Copied' : 'Copy Summary'}
             </button>
+
+            {/* Attest button — only shown when contract address is configured */}
+            {contractAddress && result.attestData && (
+              <button
+                onClick={handleAttest}
+                disabled={attestPending || attestSuccess || !isConnected}
+                className="text-sm px-4 py-2 rounded-lg border transition-colors cursor-pointer disabled:opacity-40"
+                style={{
+                  borderColor: attestSuccess ? 'var(--color-success)' : 'var(--color-accent)',
+                  color: attestSuccess ? 'var(--color-success)' : 'var(--color-accent)',
+                }}
+                title={!isConnected ? 'Connect wallet to attest' : undefined}
+              >
+                {attestSuccess
+                  ? '✓ Attested on-chain'
+                  : attestPending
+                  ? 'Confirming…'
+                  : 'Seal interpretation on-chain'}
+              </button>
+            )}
           </div>
+
+          {/* Attest tx link */}
+          {attestTxHash && (
+            <div className="text-xs" style={{ color: 'var(--color-muted)' }}>
+              Attestation tx:{' '}
+              <a
+                href={`${result.explorerUrl.replace(/\/tx\/.*/, '')}/tx/${attestTxHash}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                {attestTxHash.slice(0, 10)}… ↗
+              </a>
+            </div>
+          )}
         </div>
       )}
     </main>
