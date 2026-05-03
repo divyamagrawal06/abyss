@@ -7,8 +7,8 @@
   --color-surface:       oklch(13%   0.010 278);
   --color-surface-raised:oklch(17%   0.013 278);
   --color-border:        oklch(23%   0.012 278);
-  --color-accent:        oklch(68%   0.12  163);  /* sage-teal: fog, not blockchain blue */
-  --color-accent-dim:    oklch(18%   0.04  163);
+  --color-accent:        oklch(72%   0.20  354);  /* #ff73a8 — Bun documentation pink */
+  --color-accent-dim:    oklch(18%   0.06  354);
   --color-muted:         oklch(50%   0.008 278);
   --color-success:       oklch(67%   0.17  142);
   --color-danger:        oklch(58%   0.22  16);
