@@ -151,11 +151,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Precompute attestation values for M3 — client just passes these to the contract
-  // contentId = keccak256(abi.encodePacked("tx", txHash_as_bytes32))
-  // contentHash = keccak256(bytes(canonicalJson)) — commits to the exact payload the LLM saw
+  // contentId = keccak256(abi.encodePacked("tx", txHash_as_bytes32)) — identifies the tx
+  // contentHash = keccak256(bytes(interpretation)) — commits the AI inference result on-chain
+  // Anyone can verify: hash the displayed interpretation text and compare to the on-chain value
   const attestData = {
     contentId: keccak256(encodePacked(['string', 'bytes32'], ['tx', hash as `0x${string}`])),
-    contentHash: keccak256(toHex(canonicalJson)),
+    contentHash: keccak256(toHex(interpretation)),
     meta: 'abyss:tx:v1.0',
   }
 
