@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { keccak256, encodePacked, toHex } from 'viem'
 import { fetchTx, fetchReceipt } from '@/lib/rpc'
 
 // Contracts we can identify deterministically (used for partial_decode flag)
@@ -139,10 +140,19 @@ export async function POST(req: NextRequest) {
     interpretation = 'Interpretation unavailable — AI service error. The on-chain evidence above is accurate.'
   }
 
+  // Precompute attestation values for M3 — client just passes these to the contract
+  // contentId = keccak256(abi.encodePacked("tx", txHash_as_bytes32))
+  // contentHash = keccak256(bytes(canonicalJson)) — commits to the exact payload the LLM saw
+  const attestData = {
+    contentId: keccak256(encodePacked(['string', 'bytes32'], ['tx', hash as `0x${string}`])),
+    contentHash: keccak256(toHex(canonicalJson)),
+    meta: 'abyss:tx:v1.0',
+  }
+
   const explorerBase =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
       ? 'https://explorer.mantle.xyz'
       : 'https://explorer.sepolia.mantle.xyz'
 
-  return NextResponse.json({ evidence, interpretation, explorerUrl: `${explorerBase}/tx/${hash}` })
+  return NextResponse.json({ evidence, interpretation, explorerUrl: `${explorerBase}/tx/${hash}`, attestData })
 }
