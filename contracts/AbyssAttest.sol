@@ -12,7 +12,7 @@ contract AbyssAttest {
     /// @notice Emitted when a user attests to an AI interpretation.
     /// @param attester  The wallet address that submitted the attestation.
     /// @param contentId Identifies what was interpreted, e.g. keccak256(abi.encodePacked("tx", txHash)).
-    /// @param contentHash keccak256 of the canonical JSON payload the LLM received (sorted keys, schema v1.0).
+    /// @param contentHash keccak256 of the AI inference result (the plain-English interpretation text).
     /// @param meta      Freeform metadata string, e.g. "abyss:tx:v1.0".
     event Attested(
         address indexed attester,
@@ -23,7 +23,7 @@ contract AbyssAttest {
 
     /// @notice Submit an attestation on-chain.
     /// @param contentId   keccak256 of the content identifier (e.g. "tx" + txHash bytes).
-    /// @param contentHash keccak256 of the canonical JSON payload.
+    /// @param contentHash keccak256 of the AI inference result text. Verifiable: hash the displayed interpretation and compare.
     /// @param meta        Short label for the attestation type, e.g. "abyss:tx:v1.0".
     function attest(
         bytes32 contentId,
