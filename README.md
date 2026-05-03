@@ -1,7 +1,8 @@
 # Abyss
 
 [Deployment](https://abyss-opal.vercel.app/)
-
+[Contract on mantlescan](https://sepolia.mantlescan.xyz/address/0x5533f6d472500557c8cf4490861f28ab6901e11d#code)
+Contract Address: 0x5533f6d472500557c8cf4490861f28ab6901e11d
 
 Abyss is a beginner-first web app on Mantle that helps users understand what their wallet is doing without reading raw calldata or explorer tables.
 
