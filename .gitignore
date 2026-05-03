@@ -35,5 +35,10 @@ Thumbs.db
 # playwright browser automation artifacts
 .playwright-mcp/
 
+# hardhat build artifacts (generated — do not commit)
+artifacts/
+cache/
+typechain-types/
+
 # docs (internal only, not for repo)
 docs/
