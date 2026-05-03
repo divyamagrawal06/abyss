@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useWriteContract, useAccount } from 'wagmi'
+import { useWriteContract, useAccount, useSwitchChain } from 'wagmi'
+import { mantleTestnet, mantleMainnet } from '@/lib/chains'
 
 const ATTEST_ABI = [
   {
@@ -106,14 +107,22 @@ export default function TxPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const { isConnected } = useAccount()
+  const { isConnected, chainId } = useAccount()
   const { writeContract, isPending: attestPending, data: attestTxHash, isSuccess: attestSuccess } =
     useWriteContract()
+  const { switchChain } = useSwitchChain()
 
   const contractAddress = process.env.NEXT_PUBLIC_ATTEST_CONTRACT as `0x${string}` | undefined
+  // Which chain the contract lives on — testnet unless NEXT_PUBLIC_CHAIN=mainnet
+  const attestChain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? mantleMainnet : mantleTestnet
 
-  const handleAttest = () => {
+  const handleAttest = async () => {
     if (!result?.attestData || !contractAddress) return
+    // If on wrong chain, switch first — MetaMask will prompt the user
+    if (chainId !== attestChain.id) {
+      switchChain({ chainId: attestChain.id })
+      return
+    }
     writeContract({
       address: contractAddress,
       abi: ATTEST_ABI,
@@ -416,6 +425,8 @@ export default function TxPage() {
                   ? '✓ Attested on-chain'
                   : attestPending
                   ? 'Confirming…'
+                  : isConnected && chainId !== attestChain.id
+                  ? `Switch to ${attestChain.name}`
                   : 'Seal interpretation on-chain'}
               </button>
             )}
