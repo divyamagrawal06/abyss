@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { fetchTx, fetchReceipt } from '@/lib/rpc'
+import { keccak256, encodePacked, toHex } from 'viem'
+import { fetchTxAutoDetect, fetchReceiptOnNetwork } from '@/lib/rpc'
 
 // Contracts we can identify deterministically (used for partial_decode flag)
 const KNOWN_CONTRACTS: Record<string, string> = {
@@ -59,9 +60,10 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let tx, receipt
+  // Auto-detect which Mantle network the tx lives on (tries testnet + mainnet in parallel)
+  let detected: Awaited<ReturnType<typeof fetchTxAutoDetect>>
   try {
-    ;[tx, receipt] = await Promise.all([fetchTx(hash), fetchReceipt(hash)])
+    detected = await fetchTxAutoDetect(hash)
   } catch (err) {
     return NextResponse.json(
       { error: 'Could not reach Mantle RPC. Please try again.', details: String(err) },
@@ -69,11 +71,19 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!tx) {
+  if (!detected) {
     return NextResponse.json(
-      { error: 'Transaction not found. Check the hash or ensure you are on the right network.' },
+      { error: 'Transaction not found on Mantle Sepolia or Mantle mainnet. Double-check the hash.' },
       { status: 404 }
     )
+  }
+
+  const { tx, network } = detected
+  let receipt
+  try {
+    receipt = await fetchReceiptOnNetwork(hash, network)
+  } catch {
+    receipt = null
   }
 
   const partial_decode = computePartialDecode(tx.to, tx.input)
@@ -103,7 +113,8 @@ export async function POST(req: NextRequest) {
     knownContractName: toAddr ? (KNOWN_CONTRACTS[toAddr] ?? null) : null,
     isContractCreation: tx.to === null,
     partial_decode,
-    chain_id: process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 5000 : 5003,
+    chain_id: network === 'mainnet' ? 5000 : 5003,
+    network,
   }
 
   // Canonical JSON with sorted keys — deterministic payload for M3 attestation hash
@@ -139,10 +150,19 @@ export async function POST(req: NextRequest) {
     interpretation = 'Interpretation unavailable — AI service error. The on-chain evidence above is accurate.'
   }
 
+  // Precompute attestation values for M3 — client just passes these to the contract
+  // contentId = keccak256(abi.encodePacked("tx", txHash_as_bytes32))
+  // contentHash = keccak256(bytes(canonicalJson)) — commits to the exact payload the LLM saw
+  const attestData = {
+    contentId: keccak256(encodePacked(['string', 'bytes32'], ['tx', hash as `0x${string}`])),
+    contentHash: keccak256(toHex(canonicalJson)),
+    meta: 'abyss:tx:v1.0',
+  }
+
   const explorerBase =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    network === 'mainnet'
       ? 'https://explorer.mantle.xyz'
       : 'https://explorer.sepolia.mantle.xyz'
 
-  return NextResponse.json({ evidence, interpretation, explorerUrl: `${explorerBase}/tx/${hash}` })
+  return NextResponse.json({ evidence, interpretation, explorerUrl: `${explorerBase}/tx/${hash}`, attestData })
 }

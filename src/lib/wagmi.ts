@@ -5,7 +5,7 @@ import { injected, metaMask } from 'wagmi/connectors'
 import { mantleTestnet, mantleMainnet, DEFAULT_CHAIN } from './chains'
 
 export const wagmiConfig = createConfig({
-  chains: [DEFAULT_CHAIN],
+  chains: [mantleTestnet, mantleMainnet],
   connectors: [injected(), metaMask()],
   transports: {
     [mantleTestnet.id]: http(),
