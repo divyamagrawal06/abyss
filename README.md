@@ -2,6 +2,7 @@
 
 [Deployment](https://abyss-opal.vercel.app/)
 
+
 Abyss is a beginner-first web app on Mantle that helps users understand what their wallet is doing without reading raw calldata or explorer tables.
 
 ## Tools
@@ -31,6 +32,8 @@ npm run dev
 See `.env.example` for required variables.
 
 ## Architecture
+
+<img width="1221" height="636" alt="Untitled-2026-05-02-0202-no-bg-dark" src="https://github.com/user-attachments/assets/7b485d6d-7cce-4cd4-a885-43a7f9fcd605" />
 
 ```
 abyss/
