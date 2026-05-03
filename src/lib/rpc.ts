@@ -1,8 +1,5 @@
-const getRpcUrl = () =>
-  process.env.MANTLE_RPC_URL ??
-  (process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://rpc.mantle.xyz'
-    : 'https://rpc.sepolia.mantle.xyz')
+const TESTNET_RPC = 'https://rpc.sepolia.mantle.xyz'
+const MAINNET_RPC = 'https://rpc.mantle.xyz'
 
 export interface RpcTx {
   hash: string
@@ -30,8 +27,8 @@ export interface RpcReceipt {
   }>
 }
 
-async function rpcCall<T>(method: string, params: unknown[]): Promise<T | null> {
-  const res = await fetch(getRpcUrl(), {
+async function rpcCall<T>(rpcUrl: string, method: string, params: unknown[]): Promise<T | null> {
+  const res = await fetch(rpcUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', method, params, id: 1 }),
@@ -43,8 +40,36 @@ async function rpcCall<T>(method: string, params: unknown[]): Promise<T | null> 
   return json.result as T | null
 }
 
-export const fetchTx = (hash: string) =>
-  rpcCall<RpcTx>('eth_getTransactionByHash', [hash])
+export type NetworkName = 'testnet' | 'mainnet'
 
-export const fetchReceipt = (hash: string) =>
-  rpcCall<RpcReceipt>('eth_getTransactionReceipt', [hash])
+function rpcUrlForNetwork(network: NetworkName): string {
+  if (process.env.MANTLE_RPC_URL) return process.env.MANTLE_RPC_URL
+  return network === 'mainnet' ? MAINNET_RPC : TESTNET_RPC
+}
+
+export async function fetchTxOnNetwork(
+  hash: string,
+  network: NetworkName
+): Promise<RpcTx | null> {
+  return rpcCall<RpcTx>(rpcUrlForNetwork(network), 'eth_getTransactionByHash', [hash])
+}
+
+export async function fetchReceiptOnNetwork(
+  hash: string,
+  network: NetworkName
+): Promise<RpcReceipt | null> {
+  return rpcCall<RpcReceipt>(rpcUrlForNetwork(network), 'eth_getTransactionReceipt', [hash])
+}
+
+// Try testnet first, then mainnet. Returns the tx and which network it was found on.
+export async function fetchTxAutoDetect(
+  hash: string
+): Promise<{ tx: RpcTx; network: NetworkName } | null> {
+  const [testnetTx, mainnetTx] = await Promise.all([
+    fetchTxOnNetwork(hash, 'testnet').catch(() => null),
+    fetchTxOnNetwork(hash, 'mainnet').catch(() => null),
+  ])
+  if (testnetTx) return { tx: testnetTx, network: 'testnet' }
+  if (mainnetTx) return { tx: mainnetTx, network: 'mainnet' }
+  return null
+}
