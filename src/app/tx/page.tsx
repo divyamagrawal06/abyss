@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useWriteContract, useAccount } from 'wagmi'
+import { useWriteContract, useAccount, useSwitchChain } from 'wagmi'
+import { mantleTestnet, mantleMainnet } from '@/lib/chains'
 
 const ATTEST_ABI = [
   {
@@ -106,14 +107,22 @@ export default function TxPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const { isConnected } = useAccount()
+  const { isConnected, chainId } = useAccount()
   const { writeContract, isPending: attestPending, data: attestTxHash, isSuccess: attestSuccess } =
     useWriteContract()
+  const { switchChain } = useSwitchChain()
 
   const contractAddress = process.env.NEXT_PUBLIC_ATTEST_CONTRACT as `0x${string}` | undefined
+  // Which chain the contract lives on — testnet unless NEXT_PUBLIC_CHAIN=mainnet
+  const attestChain = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? mantleMainnet : mantleTestnet
 
-  const handleAttest = () => {
+  const handleAttest = async () => {
     if (!result?.attestData || !contractAddress) return
+    // If on wrong chain, switch first — MetaMask will prompt the user
+    if (chainId !== attestChain.id) {
+      switchChain({ chainId: attestChain.id })
+      return
+    }
     writeContract({
       address: contractAddress,
       abi: ATTEST_ABI,
@@ -143,6 +152,45 @@ export default function TxPage() {
       } else {
         setResult(data)
       }
+    } catch {
+      setError('Network error — please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const EXAMPLES = [
+    {
+      label: 'Mainnet contract call',
+      network: 'mainnet',
+      hash: '0xb044683bae3915dd8a710b055850e273d8624250080acbda8567c8f6692c5c27',
+    },
+    {
+      label: 'Sepolia contract deploy',
+      network: 'testnet',
+      hash: '0x2ff545cb4669c71210681bb0d4e4d6a30ef1b5f9124aa4e98fe00b0d8d334c5c',
+    },
+    {
+      label: 'Sepolia block tx',
+      network: 'testnet',
+      hash: '0xa09083232bbb8bfada6d28a80cd0dcebc4aaa1addba71cf35c8ed983604cb22e',
+    },
+  ]
+
+  const tryExample = async (exampleHash: string) => {
+    setHash(exampleHash)
+    setResult(null)
+    setError(null)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hash: exampleHash }),
+      })
+      const data = await res.json()
+      if (!res.ok) setError(data.error ?? 'Something went wrong.')
+      else setResult(data)
     } catch {
       setError('Network error — please try again.')
     } finally {
@@ -207,6 +255,33 @@ export default function TxPage() {
           {loading ? 'Translating…' : 'Translate'}
         </button>
       </form>
+
+      {/* Example txs */}
+      <div className="flex flex-wrap gap-2 mb-8 -mt-4">
+        <span className="text-xs self-center" style={{ color: 'var(--color-muted)' }}>
+          Try:
+        </span>
+        {EXAMPLES.map(ex => (
+          <button
+            key={ex.hash}
+            onClick={() => tryExample(ex.hash)}
+            disabled={loading}
+            className="text-xs px-3 py-1.5 rounded-full border cursor-pointer disabled:opacity-40 transition-colors"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-foreground)'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-accent)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-muted)'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)'
+            }}
+          >
+            {ex.label}
+            <span className="ml-1.5 opacity-50">{ex.network === 'mainnet' ? 'mainnet' : 'testnet'}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Error */}
       {error && (
@@ -416,6 +491,8 @@ export default function TxPage() {
                   ? '✓ Attested on-chain'
                   : attestPending
                   ? 'Confirming…'
+                  : isConnected && chainId !== attestChain.id
+                  ? `Switch to ${attestChain.name}`
                   : 'Seal interpretation on-chain'}
               </button>
             )}

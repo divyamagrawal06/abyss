@@ -52,7 +52,7 @@ abyss/
 
 | Network | Contract | Address |
 |---------|----------|---------|
-| Mantle Sepolia | AbyssAttest | TBD |
+| Mantle Sepolia | AbyssAttest | [0x5533f6d472500557c8cf4490861f28ab6901e11d](https://explorer.sepolia.mantle.xyz/address/0x5533f6d472500557c8cf4490861f28ab6901e11d) |
 
 ## Networks
 

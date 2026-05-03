@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { keccak256, encodePacked, toHex } from 'viem'
-import { fetchTx, fetchReceipt } from '@/lib/rpc'
+import { fetchTxAutoDetect, fetchReceiptOnNetwork } from '@/lib/rpc'
 
 // Contracts we can identify deterministically (used for partial_decode flag)
 const KNOWN_CONTRACTS: Record<string, string> = {
