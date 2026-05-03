@@ -1,6 +1,6 @@
 # Abyss
 
-[DEPLOYMENT](https://abyss-opal.vercel.app/)
+[Deployment](https://abyss-opal.vercel.app/)
 
 Abyss is a beginner-first web app on Mantle that helps users understand what their wallet is doing without reading raw calldata or explorer tables.
 
