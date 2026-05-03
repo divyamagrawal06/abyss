@@ -107,13 +107,13 @@ export function CloudFog() {
           p.y += p.vy
           p.rot += p.rotSpeed
 
-          // Vertical opacity fade: full above 55% height, fade out by 80%
+          // Vertical opacity fade: full above 50% height, gone by 85%
           const yRatio = p.y / H
           let yFade: number
-          if (yRatio <= 0.55) {
+          if (yRatio <= 0.50) {
             yFade = 1
-          } else if (yRatio <= 0.80) {
-            yFade = 1 - (yRatio - 0.55) / 0.25
+          } else if (yRatio <= 0.85) {
+            yFade = 1 - (yRatio - 0.50) / 0.35
           } else {
             yFade = 0
           }
@@ -132,7 +132,7 @@ export function CloudFog() {
         const buffer = 600
         puffs = puffs.filter(p =>
           p.x > -buffer && p.x < W + buffer &&
-          p.y > -buffer && p.y < H * 0.9
+          p.y > -buffer && p.y < H * 1.0
         )
         while (puffs.length < PUFF_COUNT) {
           puffs.push(spawnPuff(W, H, true))
@@ -167,7 +167,7 @@ export function CloudFog() {
       ref={canvasRef}
       className="fixed top-0 left-0 w-full pointer-events-none select-none"
       style={{
-        height: '80vh',
+        height: '100vh',
         zIndex: 0,
         mixBlendMode: 'screen',
         opacity: 0.52,
