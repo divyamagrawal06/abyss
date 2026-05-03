@@ -159,6 +159,45 @@ export default function TxPage() {
     }
   }
 
+  const EXAMPLES = [
+    {
+      label: 'Mainnet contract call',
+      network: 'mainnet',
+      hash: '0xb044683bae3915dd8a710b055850e273d8624250080acbda8567c8f6692c5c27',
+    },
+    {
+      label: 'Sepolia contract deploy',
+      network: 'testnet',
+      hash: '0x2ff545cb4669c71210681bb0d4e4d6a30ef1b5f9124aa4e98fe00b0d8d334c5c',
+    },
+    {
+      label: 'Sepolia block tx',
+      network: 'testnet',
+      hash: '0xa09083232bbb8bfada6d28a80cd0dcebc4aaa1addba71cf35c8ed983604cb22e',
+    },
+  ]
+
+  const tryExample = async (exampleHash: string) => {
+    setHash(exampleHash)
+    setResult(null)
+    setError(null)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hash: exampleHash }),
+      })
+      const data = await res.json()
+      if (!res.ok) setError(data.error ?? 'Something went wrong.')
+      else setResult(data)
+    } catch {
+      setError('Network error — please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleCopy = () => {
     if (!result) return
     const ev = result.evidence
@@ -216,6 +255,33 @@ export default function TxPage() {
           {loading ? 'Translating…' : 'Translate'}
         </button>
       </form>
+
+      {/* Example txs */}
+      <div className="flex flex-wrap gap-2 mb-8 -mt-4">
+        <span className="text-xs self-center" style={{ color: 'var(--color-muted)' }}>
+          Try:
+        </span>
+        {EXAMPLES.map(ex => (
+          <button
+            key={ex.hash}
+            onClick={() => tryExample(ex.hash)}
+            disabled={loading}
+            className="text-xs px-3 py-1.5 rounded-full border cursor-pointer disabled:opacity-40 transition-colors"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-foreground)'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-accent)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-muted)'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)'
+            }}
+          >
+            {ex.label}
+            <span className="ml-1.5 opacity-50">{ex.network === 'mainnet' ? 'mainnet' : 'testnet'}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Error */}
       {error && (
